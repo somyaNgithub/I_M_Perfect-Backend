@@ -176,7 +176,7 @@ def userDetail_Update(request):
                     return Response(deserializer.errors, status=400)
 
         else:
-            return  Response(status=401) 
+            return  Response({"error": "Authorization token not valid"}, status=401) 
 
 
 
