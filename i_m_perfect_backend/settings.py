@@ -152,9 +152,9 @@ STATIC_URL = 'static/'
 #settings to add media files
 import os
 
-# settings.py
 MEDIA_URL = 'https://%s.s3.amazonaws.com/' % 'imperfect-bucket'
 
+# MEDIA_URL = '/media/'
 # MEDIA_ROOT = os.path.join(BASE_DIR,'media')
 
 

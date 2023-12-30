@@ -7,11 +7,12 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import api_view ,permission_classes
 from rest_framework.response import Response
-from .serializers import CustomUserSerializer ,QuestionSerializer , AnswersSerializer
+from .serializers import CustomUserSerializer ,QuestionSerializer , AnswersSerializer, CategorySerializer
 from rest_framework.permissions import IsAuthenticated ,AllowAny
-from .models import CustomUser , Question , Answers
+from .models import CustomUser , Question , Answers, Category
 from django.contrib.auth import authenticate
 from .token_utils import get_user_id_from_token
+from rest_framework import generics, permissions
 # Create your views here.
 
 #-----view for showing all available api end points-----
@@ -167,7 +168,7 @@ def userDetail_Update(request):
                     task = CustomUser.objects.get(U_id=user_id)
                 except CustomUser.DoesNotExist:
                       return Response({"error": "Task not found for the current user"}, status=404)
-                deserializer = CustomUserSerializer(instance=task, data=request.data)
+                deserializer = CustomUserSerializer(instance=task, data=request.data, partial=True)
 
                 if deserializer.is_valid():
                     deserializer.save()
@@ -280,18 +281,18 @@ def create_question(request):
 # get all questions 
 @api_view(['GET'])
 def getQuestion(request):
-	question = Question.objects.all()
-	serializer = QuestionSerializer(question, many=True)
-    
-	return Response(serializer.data)
+    question = Question.objects.all()
+    print(question.query)
+    serializer = QuestionSerializer(question, many=True)
+    print(serializer)
+
+    return Response(serializer.data)
 
 
 
 
 #-----view to POST answer of the existing question----- 
 @api_view(['POST'])
-# @authentication_classes([TokenAuthentication])
-# @permission_classes([IsAuthenticated])
 def answer_question(request):
     # Get user ID from token
     user_id = get_user_id_from_token(request)
@@ -403,3 +404,27 @@ def deleteAnswer(request):
         return Response({"error": "Authentication token not valid"}, status=status.HTTP_401_UNAUTHORIZED)
 
 
+
+
+@api_view(['POST'])
+# @permission_classes([permissions.IsAuthenticated])  # Adjust permissions as needed
+def create_category_from_json(request):
+    user_id = get_user_id_from_token(request)
+    if user_id is not None:
+        data = request.data
+        
+        # Ensure the JSON data is a list of dictionaries
+        if not isinstance(data, list):
+            return Response({'error': 'Invalid JSON data. Expecting a list of dictionaries.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        created_categories = []
+        for category_data in data:
+            serializer = CategorySerializer(data=category_data)
+            if serializer.is_valid():
+                serializer.save()
+                created_categories.append(serializer.data)
+            else:
+                return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+    return Response({'message': 'Categories created successfully', 'categories': created_categories}, status=status.HTTP_201_CREATED)

@@ -25,5 +25,7 @@ urlpatterns = [
 	path('write-answer/',views.answer_question,name="answer-a-question"),
     path('answer-delete/',views.deleteAnswer,name='detele-Answer'),
     
-    path('refresh-token/', views.refresh_token, name='refresh-token')
+    path('refresh-token/', views.refresh_token, name='refresh-token'),
+    
+	path('create-category/', views.create_category_from_json, name='create-category-from-json'),
 ]

@@ -54,6 +54,15 @@ class expert(models.Model):
 
 
 
+class Category(models.Model):
+    cat_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=50, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
+
 
 class Question(models.Model):
     Q_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -64,6 +73,7 @@ class Question(models.Model):
     updated_date = models.DateTimeField(auto_now=True)  # Automatically updated on each save
     like_count = models.PositiveIntegerField(default=0)
     dislike_count = models.PositiveIntegerField(default=0)
+    categories = models.ManyToManyField(Category, related_name='questions')
     # liked_by = models.ManyToManyField(CustomUser, related_name='liked_questions')
     # dis_liked_by = models.ManyToManyField(CustomUser, related_name='dis_liked_questions')
   
@@ -89,6 +99,8 @@ class Answers(models.Model):
     
     def __str__(self):
         return self.Answer
+
+
 
 
 

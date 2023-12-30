@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import CustomUser ,Question , Answers ,UserType
+from .models import CustomUser ,Question , Answers ,UserType, Category
 from drf_extra_fields.fields import Base64ImageField
 
 
@@ -21,15 +21,25 @@ class CustomUserSerializer(serializers.ModelSerializer):
 class CustomUtilsUserSerializer(serializers.ModelSerializer):
 	class Meta:
 		model = CustomUser
-		fields =[ 'userType','userName','fullName']
+		fields =[ 'userType','userName','fullName','avatar']
+
+
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['cat_id', 'name']
 
 
 
 
 class QuestionSerializer(serializers.ModelSerializer):
+    user = CustomUtilsUserSerializer(source='U_id', read_only=True)
+    categories = CategorySerializer(many=True)
     class Meta:
         model = Question
-        fields = ['title', 'description', 'pub_date', 'U_id', 'like_count', 'dislike_count','Q_id']
+        fields = ['title', 'description', 'pub_date', 'U_id', 'like_count', 'dislike_count','Q_id','user','categories']
 
     # Make pub_date optional
     extra_kwargs = {'pub_date': {'required': False},
@@ -56,3 +66,6 @@ class AnswersSerializer(serializers.ModelSerializer):
         # user_type = validated_data.get('userType', UserType.USER.value)
         # validated_data['userType'] = user_type
         # return super().create(validated_data)   
+
+
+
