@@ -1,7 +1,7 @@
 import uuid
 from django.db import models
 from enum import Enum
-from django.contrib.auth import authenticate
+from django.utils import timezone
 
 class UserType(Enum):
     ADMIN = 'admin'
@@ -16,14 +16,14 @@ class UserType(Enum):
 class CustomUser(models.Model):
     U_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     userType = models.CharField(max_length=20, choices=[(tag, tag.value) for tag in UserType], default=UserType.ADMIN.value)
-    fullName = models.CharField(max_length=255, null=False)
-    userName = models.CharField(max_length=255, unique=True, null=False)
-    password = models.CharField(max_length=255, null=False)
-    age = models.IntegerField( null=False)
-    gender = models.CharField(max_length=10, null=False)
-    address = models.TextField(max_length=500, null=False)
-    mobileNo = models.CharField(max_length=10, null=False)
-    country = models.CharField(max_length=255, null=False)
+    fullName = models.CharField(max_length=255, null=True)
+    userName = models.CharField(max_length=255, unique=True, null=True)
+    password = models.CharField(max_length=255, null=True)
+    age = models.IntegerField( null=True)
+    gender = models.CharField(max_length=10, null=True)
+    address = models.TextField(max_length=500, null=True)
+    mobileNo = models.CharField(max_length=10, null=True)
+    country = models.CharField(max_length=255, null=True)
     avatar = models.ImageField(upload_to='media/', null=True, blank=True)
 
     def __str__(self):
@@ -54,12 +54,12 @@ class expert(models.Model):
 
 
 
-class Category(models.Model):
-    cat_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=50, unique=True)
+# class Category(models.Model):
+#     cat_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+#     name = models.CharField(max_length=50, unique=True)
 
-    def __str__(self):
-        return self.name
+#     def __str__(self):
+#         return self.name
 
 
 
@@ -73,7 +73,7 @@ class Question(models.Model):
     updated_date = models.DateTimeField(auto_now=True)  # Automatically updated on each save
     like_count = models.PositiveIntegerField(default=0)
     dislike_count = models.PositiveIntegerField(default=0)
-    categories = models.ManyToManyField(Category, related_name='questions')
+    # categories = models.ManyToManyField(Category, related_name='questions')
     # liked_by = models.ManyToManyField(CustomUser, related_name='liked_questions')
     # dis_liked_by = models.ManyToManyField(CustomUser, related_name='dis_liked_questions')
   
@@ -100,11 +100,22 @@ class Answers(models.Model):
     def __str__(self):
         return self.Answer
 
+class OTP(models.Model):
+    OTP_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    otp = models.CharField(max_length=6)
+    email = models.CharField(max_length=255, unique=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
 
 
+class PasswordResetToken(models.Model):
+    token_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    token = models.CharField(max_length=255)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-
+    def is_expired(self):
+        expiration_time = self.created_at + timezone.timedelta(hours=1)  # Adjust as needed
+        return timezone.now() > expiration_time
 
 
 

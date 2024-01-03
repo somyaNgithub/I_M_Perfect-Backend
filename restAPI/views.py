@@ -7,12 +7,17 @@ from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.decorators import api_view ,permission_classes
 from rest_framework.response import Response
-from .serializers import CustomUserSerializer ,QuestionSerializer , AnswersSerializer, CategorySerializer
+from .serializers import CustomUserSerializer ,QuestionSerializer , AnswersSerializer, OTPSerializer
 from rest_framework.permissions import IsAuthenticated ,AllowAny
-from .models import CustomUser , Question , Answers, Category
+from .models import CustomUser , Question , Answers, OTP, PasswordResetToken
 from django.contrib.auth import authenticate
 from .token_utils import get_user_id_from_token
 from rest_framework import generics, permissions
+import random
+from django.core.mail import send_mail
+from django.conf import settings
+import jwt
+from datetime import datetime, timedelta
 # Create your views here.
 
 #-----view for showing all available api end points-----
@@ -261,7 +266,7 @@ def create_question(request):
         # Create a new question with user association
         request.data['U_id'] = user_id
         print("flag1")
-        deserializer = QuestionSerializer(data=request.data)
+        deserializer = QuestionSerializer(data=request.data, partial=True)
         print("flag2")
         if deserializer.is_valid():
             print("flag3")
@@ -428,3 +433,135 @@ def create_category_from_json(request):
     
 
     return Response({'message': 'Categories created successfully', 'categories': created_categories}, status=status.HTTP_201_CREATED)
+
+
+
+
+@api_view(['POST'])
+def otp_generate(request):
+    email = request.data.get('email')
+
+    if email is not None:
+
+        otp_code = str(random.randint(100000, 999999))
+
+        # Create a dictionary with the data to be saved
+        data_to_save = {'otp': otp_code, 'email': email}
+        # Create an instance of the serializer with the data
+        deserializer = OTPSerializer(data=data_to_save)
+        if deserializer.is_valid():
+            # Save the data to the database
+            deserializer.save()
+            # Send OTP to the user's email (replace with your email sending logic)
+            send_mail('Verify your Email', f'Your OTP is: {otp_code}',settings.EMAIL_HOST_USER, [email])
+        else:
+            # If the data is not valid, return validation errors
+            return Response({'errors': deserializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+    
+    return Response({'detail': 'OTP generated successfully'}, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+def otp_verify(request):
+    otp_code = request.data.get('otp_code')
+
+    try:
+            otp_instance = OTP.objects.get(otp=otp_code)
+             # Check if the user already exists
+            user, created = CustomUser.objects.get_or_create(userName=otp_instance.email)
+            
+            # Optionally, you can add a time check here to ensure OTP is still valid
+            otp_instance.delete()
+            return Response({'detail': 'OTP verified successfully', 'User created': created}, status=status.HTTP_200_OK)
+    
+    except OTP.DoesNotExist:
+        return Response({'detail': 'Invalid OTP'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+@api_view(['POST'])
+def resetpassword_token_generate(request):
+    username =  request.data.get('username')
+    
+    try:
+        user = CustomUser.objects.get(userName=username)
+    
+    except CustomUser.DoesNotExist:
+        return Response({'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Generate a unique JWT token with user email and expiration time
+    token_payload = {
+        'email': user.userName,
+        'exp': datetime.utcnow() + timedelta(hours=1)  # Token expiration time (adjust as needed)
+        }
+    
+    token = jwt.encode(token_payload, settings.SECRET_KEY, algorithm='HS256')
+    # Save the token in the database
+    PasswordResetToken.objects.create(token=token)
+
+     # Send the reset link to the user's email (replace with your email sending logic)
+    reset_link = f'http://3.17.28.281:8000/password-reset/{token}/'
+    send_mail('Password Reset Request', f'Click the link to reset your password: {reset_link}', settings.EMAIL_HOST_USER, [user.userName])
+
+    return Response({'detail': 'Password reset link sent successfully'}, status=status.HTTP_200_OK)
+
+
+
+
+
+@api_view(['PUT'])
+def password_reset_verify(request, token):
+    # Decode the token
+    try:
+        decoded_token = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+        print(decoded_token)
+    except jwt.ExpiredSignatureError:
+        return Response({'detail': 'Token has expired'}, status=status.HTTP_400_BAD_REQUEST)
+    except jwt.InvalidTokenError:
+        return Response({'detail': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Check if the token exists in the database
+    try:
+        password_reset_token = PasswordResetToken.objects.get(token=token)
+    except PasswordResetToken.DoesNotExist:
+        return Response({'detail': 'Token not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Check if the token is expired
+    if password_reset_token.is_expired():
+        return Response({'detail': 'Token has expired'}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Update the user's password
+    user_email = decoded_token.get('email')
+    new_password = request.data.get('new_password')
+
+    try:
+        user = CustomUser.objects.get(userName=user_email)
+    except CustomUser.DoesNotExist:
+        return Response({'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+    # Update the user's password and delete the password reset token
+    user.password = make_password(new_password)
+    user.save()
+    password_reset_token.delete()
+
+    return Response({'detail': 'Password reset successfully' ,'api_status':True}, status=status.HTTP_200_OK)
+
+
+
+
+
+@api_view(['GET'])
+def AllQues_by_user(request, uid):
+    try:
+        # Retrieve questions for the specified user
+        questions = Question.objects.filter(U_id=uid)
+        
+        # Serialize the questions
+        serializer = QuestionSerializer(questions, many=True)
+        
+        return Response({'data':serializer.data, 'api_status':True}, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR),

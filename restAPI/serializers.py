@@ -1,6 +1,9 @@
 from rest_framework import serializers
-from .models import CustomUser ,Question , Answers ,UserType, Category
+from .models import CustomUser ,Question , Answers ,UserType, PasswordResetToken
 from drf_extra_fields.fields import Base64ImageField
+from .models import OTP
+
+
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
@@ -26,25 +29,26 @@ class CustomUtilsUserSerializer(serializers.ModelSerializer):
 
 
 
-class CategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Category
-        fields = ['cat_id', 'name']
+# class CategorySerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Category
+#         fields = ['cat_id', 'name']
 
 
 
 
 class QuestionSerializer(serializers.ModelSerializer):
     user = CustomUtilsUserSerializer(source='U_id', read_only=True)
-    categories = CategorySerializer(many=True)
+    # categories = CategorySerializer(many=True)
     class Meta:
         model = Question
-        fields = ['title', 'description', 'pub_date', 'U_id', 'like_count', 'dislike_count','Q_id','user','categories']
+        fields = ['title', 'description', 'pub_date', 'U_id', 'like_count', 'dislike_count','Q_id','user']
 
     # Make pub_date optional
     extra_kwargs = {'pub_date': {'required': False},
-	'U_id': {'required': False}
-	}
+	                'U_id': {'required': False},
+                    #  'categories' : {'required': False }
+	                }
     def create(self, validated_data):
         # The 'user' field is already included in the validated_data
         return Question.objects.create(**validated_data)
@@ -68,4 +72,20 @@ class AnswersSerializer(serializers.ModelSerializer):
         # return super().create(validated_data)   
 
 
+
+
+class OTPSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OTP
+        fields = ['otp', 'email']
+
+
+
+class PasswordResetTokenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PasswordResetToken
+        fields = ['token', 'created_at']
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
 

@@ -27,5 +27,10 @@ urlpatterns = [
     
     path('refresh-token/', views.refresh_token, name='refresh-token'),
     
-	path('create-category/', views.create_category_from_json, name='create-category-from-json'),
+	# path('create-category/', views.create_category_from_json, name='create-category-from-json'),
+	path('otp-generate/', views.otp_generate, name='otp-generate'),
+	path('otp-verify/', views.otp_verify, name='otp-verify'),
+	path('password_reset_token_gen/', views.resetpassword_token_generate, name='password_reset_token_gen'),
+    path('password-reset/<str:token>/', views.password_reset_verify, name='password-reset-verify'),
+    path('user-questions/<uuid:uid>/', views.AllQues_by_user, name='user-questions'),
 ]
