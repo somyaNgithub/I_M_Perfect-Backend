@@ -132,6 +132,7 @@ def user_create(request):
 def custom_user_login(request):
     username = request.data.get('username')
     password = request.data.get('password')
+    print(password)
 
     # Ensure both username and password are provided
     if not username or not password:
@@ -139,8 +140,9 @@ def custom_user_login(request):
 
     # Retrieve the user by username
     user = CustomUser.objects.filter(userName__iexact=username).first()
+    print(user.password)
     
-    if user and (str(password) == str(user.password)):
+    if user and check_password(password, user.password):
         # Password is correct
         # deserialize the user data(converting JSON into django models )
         
@@ -411,28 +413,28 @@ def deleteAnswer(request):
 
 
 
-@api_view(['POST'])
-# @permission_classes([permissions.IsAuthenticated])  # Adjust permissions as needed
-def create_category_from_json(request):
-    user_id = get_user_id_from_token(request)
-    if user_id is not None:
-        data = request.data
+# @api_view(['POST'])
+# # @permission_classes([permissions.IsAuthenticated])  # Adjust permissions as needed
+# def create_category_from_json(request):
+#     user_id = get_user_id_from_token(request)
+#     if user_id is not None:
+#         data = request.data
         
-        # Ensure the JSON data is a list of dictionaries
-        if not isinstance(data, list):
-            return Response({'error': 'Invalid JSON data. Expecting a list of dictionaries.'}, status=status.HTTP_400_BAD_REQUEST)
+#         # Ensure the JSON data is a list of dictionaries
+#         if not isinstance(data, list):
+#             return Response({'error': 'Invalid JSON data. Expecting a list of dictionaries.'}, status=status.HTTP_400_BAD_REQUEST)
         
-        created_categories = []
-        for category_data in data:
-            serializer = CategorySerializer(data=category_data)
-            if serializer.is_valid():
-                serializer.save()
-                created_categories.append(serializer.data)
-            else:
-                return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+#         created_categories = []
+#         for category_data in data:
+#             serializer = CategorySerializer(data=category_data)
+#             if serializer.is_valid():
+#                 serializer.save()
+#                 created_categories.append(serializer.data)
+#             else:
+#                 return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     
 
-    return Response({'message': 'Categories created successfully', 'categories': created_categories}, status=status.HTTP_201_CREATED)
+#     return Response({'message': 'Categories created successfully', 'categories': created_categories}, status=status.HTTP_201_CREATED)
 
 
 
