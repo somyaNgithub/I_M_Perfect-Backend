@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import CustomUser ,Question , Answers ,UserType, PasswordResetToken
 from drf_extra_fields.fields import Base64ImageField
 from .models import OTP
+from django.contrib.auth.hashers import make_password
 
 
 
@@ -14,6 +15,11 @@ class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields =['U_id', 'userType','userName','password','fullName','age','gender','address','mobileNo', 'country','avatar']
+    
+    def create(self, validated_data):
+        # Hash the password before saving it to the database
+        validated_data['password'] = make_password(validated_data.get('password'))
+        return super().create(validated_data)
 
 
 

@@ -103,25 +103,13 @@ def update_user_by_Admin(request, uid):
 @api_view(['POST'])
 def user_create(request):
     deserializer = CustomUserSerializer(data=request.data)
-    print(deserializer)
-    utype = request.data.get('age')
-    print(utype)
     
     if deserializer.is_valid():
-        print('flag3')
         user = deserializer.save()  # Save the user instance
-        refresh = RefreshToken.for_user(user)
-        data2= deserializer.data
-        data = {
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-            'user':data2
-        }
-        return Response(data, status=status.HTTP_201_CREATED)
+        data= deserializer.data
+        return Response({'data' : data, 'message' : 'User suscessfully created', 'api_status' : True}, status=status.HTTP_201_CREATED)
     else:
-        print(deserializer.errors)
-
-    return Response(deserializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(deserializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
